@@ -10,7 +10,48 @@
 - 为请求增加 `X-Real-IP` 参数解锁海外限制，支持指定网易云服务器 IP，支持设置上游 HTTP / HTTPS 代理
 - 完整的流量代理功能 (HTTP / HTTPS)，可直接作为系统代理 (同时支持 PAC)
 
+
+## 在vps进行自签名ca证书
+
+```
+# 生成 CA 私钥
+openssl genrsa -out ca.key 2048
+
+# 生成 CA 证书 ("YOURNAME" 处填上你自己的名字)
+openssl req -x509 -new -nodes -key ca.key -sha256 -days 1825 -out ca.crt -subj "/C=CN/CN=UnblockNeteaseMusic Root CA/O=YOURNAME"
+
+# 生成服务器私钥
+openssl genrsa -out server.key 2048
+
+# 生成证书签发请求
+openssl req -new -sha256 -key server.key -out server.csr -subj "/C=CN/L=Hangzhou/O=NetEase (Hangzhou) Network Co., Ltd/OU=IT Dept./CN=*.music.163.com"
+
+# 使用 CA 签发服务器证书
+openssl x509 -req -extfile <(printf "extendedKeyUsage=serverAuth\nsubjectAltName=DNS:music.163.com,DNS:*.music.163.com") -sha256 -days 365 -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt
+
+# 证书生成后，放置在/root/docker/unmusic/crt下，路径与docker run时保持一致。
+```
+
+## 在mac进行ca证书安装
+
+```
+https://blog.csdn.net/weixin_34417183/article/details/88928123
+```
+
 ## 运行
+
+使用 Docker
+
+```
+$ docker run --restart=always --name unmusic -v /root/docker/unmusic/crt/server.crt:/usr/src/app/server.crt -v /root/docker/unmusic/crt/server.key:/usr/src/app/server.key -d -p 80:8080 -p 443:8081 nondanee/unblockneteasemusic --port 8080:8081 --strict
+```
+
+##  
+
+
+
+## 运行
+
 
 使用 npx
 
